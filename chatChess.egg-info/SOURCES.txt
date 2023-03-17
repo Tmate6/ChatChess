@@ -1,0 +1,12 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+chatChess.egg-info/PKG-INFO
+chatChess.egg-info/SOURCES.txt
+chatChess.egg-info/dependency_links.txt
+chatChess.egg-info/top_level.txt
+chatchess.egg-info/PKG-INFO
+chatchess.egg-info/SOURCES.txt
+chatchess.egg-info/dependency_links.txt
+chatchess.egg-info/top_level.txt

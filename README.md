@@ -10,8 +10,9 @@ pip install chatchess
 ## Usage
 
 Import the package:
+
 ```python
-from ChatChess import ChatChess
+from dist.ChatChess.ChatChess import ChatChess
 ```
 
 First a `Game` object needs to be decalerd as follows:
@@ -45,33 +46,35 @@ bot = ChatChess.Game("OPENAI_API_KEY")
 ## Examples
 
 ### Simple player vs ChatGPT game
+
 ```python
-from ChatChess import ChatChess
+from dist.ChatChess.ChatChess import ChatChess
 
 bot = ChatChess.Game("OPENAI_API_KEY")  # Set API key
 
 while True:
-  print(bot.board())  # Print the board
-  bot.play(input("Make a move: "))  # Ask player to make a move, then ChatGPT responds
-  if bot.board.is_game_over():  # Break if game over
-    break
+    print(bot.board())  # Print the board
+    bot.play(input("Make a move: "))  # Ask player to make a move, then ChatGPT responds
+    if bot.board.is_game_over():  # Break if game over
+        break
 ```
 
 ### Simple ChatGPT vs ChatGPT game from a set position
+
 ```python
 import chess
 import chess.fen
-from ChatChess import ChatChess
+from dist.ChatChess.ChatChess import ChatChess
 
 bot = ChatChess.Game("OPENAI_API_KEY")  # Set API key
 bot.board = chess.Board("rnbq1bnr/ppppkppp/8/4p3/4P3/8/PPPPKPPP/RNBQ1BNR w - - 2 3")  # Set position
 
 while True:
-  bot.getGPTMove()  # Ask ChatGPT to make a move
-  print(bot.message)  # Print move and info
-  if bot.board.is_game_over():  # Break if game over
-    print(str(chess.pgn.Game.from_board(bot.board)))
-    break
+    bot.getGPTMove()  # Ask ChatGPT to make a move
+    print(bot.message)  # Print move and info
+    if bot.board.is_game_over():  # Break if game over
+        print(str(chess.pgn.Game.from_board(bot.board)))
+        break
 ```
 
 ## Info

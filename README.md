@@ -3,7 +3,7 @@ A simple python package to play chess with ChatGPT
 
 ## Installation
 
-```python
+```
 pip install chatchess
 ```
 
@@ -12,7 +12,8 @@ pip install chatchess
 Import the package:
 
 ```python
-from dist.ChatChess.ChatChess import ChatChess
+
+from ChatChess import ChatChess
 ```
 
 First a `Game` object needs to be decalerd as follows:
@@ -48,7 +49,7 @@ bot = ChatChess.Game("OPENAI_API_KEY")
 ### Simple player vs ChatGPT game
 
 ```python
-from dist.ChatChess.ChatChess import ChatChess
+from ChatChess import ChatChess
 
 bot = ChatChess.Game("OPENAI_API_KEY")  # Set API key
 
@@ -62,9 +63,8 @@ while True:
 ### Simple ChatGPT vs ChatGPT game from a set position
 
 ```python
-import chess
 import chess.fen
-from dist.ChatChess.ChatChess import ChatChess
+from ChatChess import ChatChess
 
 bot = ChatChess.Game("OPENAI_API_KEY")  # Set API key
 bot.board = chess.Board("rnbq1bnr/ppppkppp/8/4p3/4P3/8/PPPPKPPP/RNBQ1BNR w - - 2 3")  # Set position

@@ -3,19 +3,19 @@ A simple python package to play chess with ChatGPT
 
 ## Installation
 
-```
-pip install -i https://test.pypi.org/simple/ chatChess
+```python
+pip install chatchess
 ```
 
 ## Usage
 
 Import the package:
-```
+```python
 from ChatChess import ChatChess
 ```
 
 First a `Game` object needs to be decalerd as follows:
-```
+```python
 bot = ChatChess.Game("OPENAI_API_KEY")
 ```
 
@@ -45,7 +45,7 @@ bot = ChatChess.Game("OPENAI_API_KEY")
 ## Examples
 
 ### Simple player vs ChatGPT game
-```
+```python
 from ChatChess import ChatChess
 
 bot = ChatChess.Game("OPENAI_API_KEY")  # Set API key
@@ -58,7 +58,7 @@ while True:
 ```
 
 ### Simple ChatGPT vs ChatGPT game from a set position
-```
+```python
 import chess
 import chess.fen
 from ChatChess import ChatChess

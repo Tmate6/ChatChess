@@ -1,4 +1,4 @@
-# # ChatChess
+# ChatChess
 A simple python package to play chess with ChatGPT
 
 ## Installation

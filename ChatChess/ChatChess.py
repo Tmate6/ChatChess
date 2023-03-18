@@ -25,6 +25,8 @@ class Game:
 
         self.board = chess.Board()
         self.fails = 0
+
+        self.lastMove = {"san": "", "uci": []}
         self.message = ""
 
         self.printDebug = False
@@ -129,6 +131,8 @@ class Game:
 
         # try simply
         try:
+            self.lastMove["uci"] = self.board.parse_san(move)
+            self.lastMove["san"] = move
             self.board.push_san(move)
             self.message = f"Move normal: {move} Fails: {self.fails}"
             self.fails = 0
@@ -138,8 +142,10 @@ class Game:
 
         # try making first move lowercase (pawn move)
         try:
-            ModMove = move[0].lower() + move[1:]
-            self.board.push_san(ModMove)
+            modMove = move[0].lower() + move[1:]
+            self.lastMove["uci"] = self.board.parse_san(modMove)
+            self.lastMove["san"] = modMove
+            self.board.push_san(modMove)
             self.message = f"Move lower: {move} Fails: {self.fails}"
             self.fails = 0
             return move[0].lower() + move[1:]
@@ -151,6 +157,8 @@ class Game:
         for chars in range(len(move), 0, -1):
             for i in range(len(move)):
                 try:
+                    self.lastMove["uci"] = self.board.parse_san(move[i:i + chars])
+                    self.lastMove["san"] = move[i:i + chars]
                     self.board.push_san(move[i:i + chars])
                     self.message = f"Move scan: {move[i:i + chars]} Fails: {self.fails}"
                     self.fails = 0

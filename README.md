@@ -12,7 +12,6 @@ pip install chatchess
 Import the package:
 
 ```python
-
 from ChatChess import ChatChess
 ```
 
@@ -21,14 +20,18 @@ First a `Game` object needs to be decalerd as follows:
 bot = ChatChess.Game("OPENAI_API_KEY")
 ```
 
-### Additional parameters:
+### Additional parameters
 
 - `bot.maxTokens = 10`: Set max_tokens passed to ChatGPT on each move
 - `bot.maxFails = 5`: Amount of times to retry sending prompt to ChatGPT when invalid move is returned
 - `bot.prompt = {"normal" : "", "failed" : "", "start" : ""}`: The prompts to send to ChatGPt at each game state
 - `bot.board = chess.Board()`: Chess board object
-- `bot.message = ""`: Set to move into after each GPT move
 - `bot.printDebug = False`: Print debug info - occaisonaly useful
+
+### Output
+
+- `bot.lastMove["uci"] = ""`: Returns the last move in the given format (uci or san)
+- `bot.message = ""`: Returns the move into after each GPT move
 
 ### Functions
 

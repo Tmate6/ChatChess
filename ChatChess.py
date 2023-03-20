@@ -2,12 +2,20 @@ import chess
 import chess.pgn
 import openai
 
+import signal
+
+class TimeoutException(Exception):
+    pass
+
 # Exception for bad player move
-class badPlayerMoveError(Exception):
+class BadPlayerMoveError(Exception):
     pass
 
 # Exception for bad bot move
-class badGPTMoveError(Exception):
+class BadGPTMoveError(Exception):
+    pass
+
+class BadMoveError(Exception):
     pass
 
 def printDebug(input, self):
@@ -19,6 +27,7 @@ class Game:
         openai.api_key = apiKey
         self.maxTokens = 10
         self.maxFails = 5
+        self.maxTime = 5
         self.prompt = {"normal" : "Reply next chess move as {}. Only say the move. {}",
                        "failed" : "Reply next chess move as {}. Play one of these moves: {}. Only say the move. {}",
                        "start" : "Say the first move to play in chess in standard notation"}
@@ -26,48 +35,25 @@ class Game:
         self.board = chess.Board()
         self.fails = 0
 
-        self.lastMove = {"san": "", "uci": []}
+        self.move = {"input": {"san": "", "uci": ""}, "ChatGPT": {"san": "", "uci": ""}}
         self.message = ""
 
         self.printDebug = False
 
-    ## Chess-related
+    def timeoutHandler(self, *args):
+        self.fails += 1
+        raise TimeoutException(f"ChatGPT timed out ({self.maxTime})")
 
-    ## Player/GPT-related
-
-    # Combine pushing player move and returning GPT move
+    # Combine handling player move and returning ChatGPT move
     def play(self, move):
         printDebug("play", self)
         if self.board.is_game_over():
             return
 
-        self.pushPlayerMove(move)
+        self.handleInputMove(move)
         return self.getGPTMove()
 
-    # Push move made by player
-    def pushPlayerMove(self, move):
-        try:
-            self.board.push_san(move)
-            return
-        except:
-            pass
-
-        try:
-            self.board.push(move)
-            return
-        except:
-            pass
-
-        try:
-            capitalizeMove = move[0].capitalize() + move[1:]
-            self.board.push_san(capitalizeMove)
-            return
-        except:
-            pass
-
-        raise badPlayerMoveError("The move inputted can't be played")
-
-    # Return GPT move including retrying on failed attempts
+    # Return ChatGPT move including retrying on failed attempts
     def getGPTMove(self):
         printDebug("getGPTMove", self)
         if self.board.is_game_over():
@@ -75,13 +61,16 @@ class Game:
 
         for i in range(5):
             try:
-                return self.handleResponse(self.askGPT(self.createPrompt()))
-            except badGPTMoveError:
-                pass
+                return self.handleGPTMove(self.askGPT(self.createPrompt()))
+            except BadGPTMoveError:
+                printDebug("BadGPTMoveError", self)
+            except TimeoutException:
+                printDebug("TimeoutException", self)
 
         self.message = f"Move fail limit reached ({self.fails})"
         return
 
+    ## ChatGPT querying
     # Create prompt based on current position
     def createPrompt(self):
         printDebug("createPrompt", self)
@@ -102,16 +91,66 @@ class Game:
     # Ask ChatGPT for the move
     def askGPT(self, currPrompt) -> str:
         printDebug("askGPT", self)
+
+        signal.signal(signal.SIGALRM, self.timeoutHandler)
+        signal.alarm(self.maxTime)
+
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             max_tokens=self.maxTokens,
             messages=[{"role": "system", "content": currPrompt}]
         )
+
+        signal.alarm(0)
         return response.choices[0]["message"]["content"]
 
+    ## Move handling
+    def handleResponse(self, response, player):
+        move = response
+        # capitelize peice
+        if len(move) > 2:
+            move = move[0].capitalize() + move[1:]
+
+        # try simply
+        try:
+            self.move[player]["uci"] = self.board.parse_san(move)
+            self.move[player]["san"] = move
+            self.board.push_san(move)
+            self.message = f"Move normal: {move} Player: {player} Fails: {self.fails}"
+            return move
+        except:
+            pass
+
+        # try making first move lowercase (pawn move)
+        try:
+            modMove = move[0].lower() + move[1:]
+            self.move[player]["uci"] = self.board.parse_san(modMove)
+            self.move[player]["san"] = modMove
+            self.board.push_san(modMove)
+            self.message = f"Move lower: {move} Player: {player} Fails: {self.fails}"
+            return move[0].lower() + move[1:]
+        except:
+            pass
+
+        # try to scan whole string for a move
+        move = response
+        for chars in range(len(move), 0, -1):
+            for i in range(len(move)):
+                try:
+                    self.move[player]["uci"] = self.board.parse_san(move[i:i + chars])
+                    self.move[player]["san"] = move[i:i + chars]
+                    self.board.push_san(move[i:i + chars])
+                    self.message = f"Move scan: {move[i:i + chars]} Player: {player} Fails: {self.fails}"
+                    return move[i:i + chars]
+                except:
+                    pass
+
+        raise BadMoveError("The given move can't be played")
+
     # Handle move returned from ChatGPT
-    def handleResponse(self, completion):
-        printDebug("handleCompletion", self)
+    def handleGPTMove(self, completion):
+        printDebug("handleGPTResponse", self)
+
         # erase special characters
         move = completion.replace("\n", "").replace(".", "").replace(" ", "")
 
@@ -125,46 +164,17 @@ class Game:
 
         printDebug(move, self)
 
-        # capitelize peice
-        if len(move) > 2:
-            move = move[0].capitalize() + move[1:]
-
-        # try simply
         try:
-            self.lastMove["uci"] = self.board.parse_san(move)
-            self.lastMove["san"] = move
-            self.board.push_san(move)
-            self.message = f"Move normal: {move} Fails: {self.fails}"
+            self.handleResponse(move, "ChatGPT")
             self.fails = 0
-            return move
-        except:
-            pass
+        except BadMoveError:
+            self.fails += 1
+            raise BadGPTMoveError("The move ChatGPT gave can't be played")
 
-        # try making first move lowercase (pawn move)
+    # Handle inputted move
+    def handleInputMove(self, move):
         try:
-            modMove = move[0].lower() + move[1:]
-            self.lastMove["uci"] = self.board.parse_san(modMove)
-            self.lastMove["san"] = modMove
-            self.board.push_san(modMove)
-            self.message = f"Move lower: {move} Fails: {self.fails}"
+            self.handleResponse(move, "input")
             self.fails = 0
-            return move[0].lower() + move[1:]
-        except:
-            pass
-
-        # try to scan whole string for a move
-        move = completion
-        for chars in range(len(move), 0, -1):
-            for i in range(len(move)):
-                try:
-                    self.lastMove["uci"] = self.board.parse_san(move[i:i + chars])
-                    self.lastMove["san"] = move[i:i + chars]
-                    self.board.push_san(move[i:i + chars])
-                    self.message = f"Move scan: {move[i:i + chars]} Fails: {self.fails}"
-                    self.fails = 0
-                    return move[i:i + chars]
-                except:
-                    pass
-
-        self.fails += 1
-        raise badGPTMoveError("The move ChatGPT gave can't be played")
+        except BadMoveError:
+            raise BadPlayerMoveError("The move inputted can't be played")

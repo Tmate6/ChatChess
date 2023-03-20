@@ -12,7 +12,7 @@ pip install chatchess
 Import the package:
 
 ```python
-import ChatChess
+from ChatChess import ChatChess
 ```
 
 First a `Game` object needs to be decalerd as follows:
@@ -53,7 +53,7 @@ bot = ChatChess.Game("OPENAI_API_KEY")
 ### Simple player vs ChatGPT game
 
 ```python
-import ChatChess
+from ChatChess import ChatChess
 
 bot = ChatChess.Game("OPENAI_API_KEY")  # Set API key
 
@@ -67,7 +67,7 @@ while True:
 ### Simple ChatGPT vs ChatGPT game from a set position
 
 ```python
-import ChatChess
+from ChatChess import ChatChess
 import chess.pgn
 
 bot = ChatChess.Game("OPENAI_API_KEY")  # Set API key
@@ -84,7 +84,7 @@ while True:
 ### Function for returning ChatGPT moves as FEN from a set position (eg. for a Lichess bot)
 
 ```python
-import ChatChess
+from ChatChess import ChatChess
 
 bot = ChatChess.Game("OPENAI_API_KEY")  # Set API key
 

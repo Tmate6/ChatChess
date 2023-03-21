@@ -20,8 +20,6 @@ setuptools.setup(
     ],
     install_requires=[
         "chess",
-        "openai",
-        "threading",
-        "queue"
+        "openai"
     ],
 )

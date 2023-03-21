@@ -4,6 +4,9 @@ import openai
 import threading
 import queue
 
+class MoveLimitError(Exception):
+    pass
+
 class TimeoutException(Exception):
     pass
 
@@ -64,11 +67,9 @@ class Game:
             except BadGPTMoveError:
                 self.fails += 1
                 printDebug("BadGPTMoveError", self)
-            except BadInputMoveError:
-                printDebug("BadInputMoveError", self)
 
         self.message = f"Move fail limit reached ({self.fails})"
-        return
+        raise MoveLimitError(f"Move fail limit reached ({self.fails})")
 
     ## ChatGPT querying
     # Create prompt based on current position

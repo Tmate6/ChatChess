@@ -48,6 +48,11 @@ bot = ChatChess.Game("OPENAI_API_KEY")
 - `response = bot.askGPT(prompt)`: Queries ChatGPT prompt based on set parameters, times out after `bot.maxTime` seconds
 - `move = bot.handleResponse(response, player)`: Searches for chess move in string - adds it to self.move as player
 
+### Errors
+
+- `MoveLimitError`: Move fail limit reached
+- `BadInputMoveError`: Move inputted can't be played
+
 ## Examples
 
 ### Simple player vs ChatGPT game

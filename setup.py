@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="chatchess",
-    version="1.1.5",
+    version="1.1.6",
     author="Mate Tohai",
     author_email="admin@tmate6.com",
     description="A package to play chess with ChatGPT",
@@ -21,5 +21,7 @@ setuptools.setup(
     install_requires=[
         "chess",
         "openai",
+        "threading",
+        "queue"
     ],
 )

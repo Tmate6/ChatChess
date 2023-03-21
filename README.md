@@ -24,15 +24,15 @@ bot = ChatChess.Game("OPENAI_API_KEY")
 
 - `bot.maxTokens = 10`: Set max_tokens passed to ChatGPT on each move
 - `bot.maxFails = 5`: Amount of times to retry sending prompt to ChatGPT when invalid move is returned
-- `bot.maxTime = 5`: Maximum amount of time to wait for ChatGPT answer before timing out
+- `bot.maxTime = 5`: Maximum amount of seconds to wait for ChatGPT answer before timing out
 - `bot.prompt = {"normal" : "", "failed" : "", "start" : ""}`: The prompts to send to ChatGPt at each game state
 - `bot.board = chess.Board()`: Chess board object
 - `bot.printDebug = False`: Print debug info - occaisonaly useful
 
 ### Output
 
-- `bot.move["ChatGPT"]["uci"] = ""`: Returns the last move of given player (ChatGPT / input) in the given format (uci / san)
-- `bot.message = ""`: Returns the move into after each GPT move
+- `move = bot.move["ChatGPT"]["uci"]`: Returns the last move of given player (ChatGPT / input) in the given format (uci / san)
+- `message = bot.message`: Returns the move into after each GPT move
 
 ### Functions
 
@@ -45,7 +45,7 @@ bot = ChatChess.Game("OPENAI_API_KEY")
 
 - `bot.pushPlayerMove("e4")`: Push a move without ChatGPT responding
 - `prompt = bot.createPrompt()`: Creates prompt to send to ChatGPT based on current position and previous fails - returns prompt
-- `response = bot.askGPT(prompt)`: Queries ChatGPT prompt based on set parameters
+- `response = bot.askGPT(prompt)`: Queries ChatGPT prompt based on set parameters, times out after `bot.maxTime` seconds
 - `move = bot.handleResponse(response, player)`: Searches for chess move in string - adds it to self.move as player
 
 ## Examples
@@ -64,20 +64,26 @@ while True:
         break
 ```
 
-### Simple ChatGPT vs ChatGPT game from a set position
+### Simple ChatGPT vs ChatGPT game
 
 ```python
 from ChatChess import ChatChess
 import chess.pgn
+from datetime import date
 
 bot = ChatChess.Game("OPENAI_API_KEY")  # Set API key
-bot.board = chess.Board("rnbq1bnr/ppppkppp/8/4p3/4P3/8/PPPPKPPP/RNBQ1BNR w - - 2 3")  # Set position
 
 while True:
     bot.getGPTMove()  # Ask ChatGPT to make a move
     print(bot.message)  # Print move and info
     if bot.board.is_game_over():  # Break if game over
-        print(str(chess.pgn.Game.from_board(bot.board)))
+        game = chess.pgn.Game.from_board(bot.board)  # Create PGN from game
+        game.headers["Event"] = "ChatChess test"
+        game.headers["Date"] = date.today().strftime("%d.%m.%Y")
+        game.headers["White"] = "ChatGPT"
+        game.headers["Black"] = "ChatGPT"
+
+        print(game)
         break
 ```
 
@@ -85,14 +91,16 @@ while True:
 
 ```python
 from ChatChess import ChatChess
+import chess
 
 bot = ChatChess.Game("OPENAI_API_KEY")  # Set API key
 
-def getGPTMove(currBoard):
-    bot.board = currBoard  # Pass board to ChatChess
+def getGPTMove():
+    bot.board = chess.Board()  # Pass board to ChatChess
     bot.getGPTMove()  # Ask ChatGPT to make a move
     return bot.move["ChatGPT"]["FEN"].fen()  # Return FEN move
 ```
+When setting the board for `bot.board`, make sure that the board is not simply from a set position, but has the moves in pgn format to increase chatgpt move success rate
 
 ## Info
 ### Uses

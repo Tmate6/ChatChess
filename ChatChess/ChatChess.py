@@ -1,14 +1,14 @@
 import chess
 import chess.pgn
 import openai
-
-import signal
+import threading
+import queue
 
 class TimeoutException(Exception):
     pass
 
-# Exception for bad player move
-class BadPlayerMoveError(Exception):
+# Exception for bad input move
+class BadInputMoveError(Exception):
     pass
 
 # Exception for bad bot move
@@ -40,10 +40,6 @@ class Game:
 
         self.printDebug = False
 
-    def timeoutHandler(self, *args):
-        self.fails += 1
-        raise TimeoutException(f"ChatGPT timed out ({self.maxTime})")
-
     # Combine handling player move and returning ChatGPT move
     def play(self, move):
         printDebug("play", self)
@@ -62,10 +58,14 @@ class Game:
         for i in range(5):
             try:
                 return self.handleGPTMove(self.askGPT(self.createPrompt()))
-            except BadGPTMoveError:
-                printDebug("BadGPTMoveError", self)
             except TimeoutException:
+                self.fails += 1
                 printDebug("TimeoutException", self)
+            except BadGPTMoveError:
+                self.fails += 1
+                printDebug("BadGPTMoveError", self)
+            except BadInputMoveError:
+                printDebug("BadInputMoveError", self)
 
         self.message = f"Move fail limit reached ({self.fails})"
         return
@@ -90,19 +90,23 @@ class Game:
 
     # Ask ChatGPT for the move
     def askGPT(self, currPrompt) -> str:
-        printDebug("askGPT", self)
+        def askGPTThread(q, maxTokens, currPrompt):
+            q.put(openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    max_tokens=maxTokens,
+                    messages=[{"role": "system", "content": currPrompt}]
+                ).choices[0]["message"]["content"])
 
-        signal.signal(signal.SIGALRM, self.timeoutHandler)
-        signal.alarm(self.maxTime)
+        # Create thread to timeout if takes too long
+        q = queue.Queue()
+        thread = threading.Thread(target=askGPTThread, args=(q, self.maxTokens, currPrompt))
+        thread.start()
+        thread.join(self.maxTime)
 
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            max_tokens=self.maxTokens,
-            messages=[{"role": "system", "content": currPrompt}]
-        )
-
-        signal.alarm(0)
-        return response.choices[0]["message"]["content"]
+        if thread.is_alive():
+            raise TimeoutException
+        else:
+            return q.get()
 
     ## Move handling
     def handleResponse(self, response, player):
@@ -168,7 +172,6 @@ class Game:
             self.handleResponse(move, "ChatGPT")
             self.fails = 0
         except BadMoveError:
-            self.fails += 1
             raise BadGPTMoveError("The move ChatGPT gave can't be played")
 
     # Handle inputted move
@@ -177,4 +180,4 @@ class Game:
             self.handleResponse(move, "input")
             self.fails = 0
         except BadMoveError:
-            raise BadPlayerMoveError("The move inputted can't be played")
+            raise BadInputMoveError("The move inputted can't be played")

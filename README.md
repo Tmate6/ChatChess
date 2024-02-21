@@ -22,10 +22,11 @@ bot = ChatChess.Game("OPENAI_API_KEY")
 
 ### Additional parameters
 
+- `self.model = "gpt-3.5-turbo"`: ChatGPT model to be used. 3.5-turbo recommended, see models and pricing here: https://openai.com/pricing
 - `bot.maxTokens = 10`: Set max_tokens passed to ChatGPT on each move
 - `bot.maxFails = 5`: Amount of times to retry sending prompt to ChatGPT when invalid move is returned
 - `bot.maxTime = 5`: Maximum amount of seconds to wait for ChatGPT answer before timing out
-- `bot.prompt = {"normal" : "", "failed" : "", "start" : ""}`: The prompts to send to ChatGPt at each game state
+- `bot.prompt = {"normal" : "", "failed" : "", "start" : ""}`: The prompts to send to ChatGPT at each game state
 - `bot.board = chess.Board()`: Chess board object
 - `bot.printDebug = False`: Print debug info - occaisonaly useful
 

@@ -31,6 +31,7 @@ class Game:
         self.maxTokens = 10
         self.maxFails = 5
         self.maxTime = 5
+        self.model = "gpt-3.5-turbo"
         self.prompt = {"normal" : "Reply next chess move as {}. Only say the move. {}",
                        "failed" : "Reply next chess move as {}. Play one of these moves: {}. Only say the move. {}",
                        "start" : "Say the first move to play in chess in standard notation"}
@@ -61,6 +62,7 @@ class Game:
         for i in range(5):
             try:
                 return self.handleGPTMove(self.askGPT(self.createPrompt()))
+            
             except TimeoutException:
                 self.fails += 1
                 printDebug("TimeoutException", self)
@@ -91,19 +93,26 @@ class Game:
 
     # Ask ChatGPT for the move
     def askGPT(self, currPrompt) -> str:
-        def askGPTThread(q, maxTokens, currPrompt):
-            q.put(openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    max_tokens=maxTokens,
-                    messages=[{"role": "system", "content": currPrompt}]
-                ).choices[0]["message"]["content"])
+        def askGPTThread(q, currPrompt):
+            try:
+                q.put(openai.ChatCompletion.create(
+                        model=self.model,
+                        max_tokens=self.maxTokens,
+                        messages=[{"role": "system", "content": currPrompt}]
+                    ).choices[0]["message"]["content"])
+                
+            except TimeoutError:
+                printDebug(f"Thread timout", self)
+            except openai.error.InvalidRequestError as exc:
+                printDebug(f"Thread OpenAI - invalid model: {exc}", self)
+                raise exc
 
         # Create thread to timeout if takes too long
         q = queue.Queue()
-        thread = threading.Thread(target=askGPTThread, args=(q, self.maxTokens, currPrompt))
+        thread = threading.Thread(target=askGPTThread, args=(q, currPrompt))
         thread.start()
         thread.join(self.maxTime)
-
+        
         if thread.is_alive():
             raise TimeoutException
         else:
@@ -180,5 +189,6 @@ class Game:
         try:
             self.handleResponse(move, "input")
             self.fails = 0
+
         except BadMoveError:
             raise BadInputMoveError("The move inputted can't be played")
